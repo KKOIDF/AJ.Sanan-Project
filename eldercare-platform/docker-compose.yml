@@ -1,51 +1,12 @@
-version: "3.9"
-
 services:
-  postgres:
-    image: postgres:16
-    restart: unless-stopped
-    environment:
-      POSTGRES_USER: app
-      POSTGRES_PASSWORD: app
-      POSTGRES_DB: eldercare
-    ports:
-      - "5432:5432"
-    volumes:
-      - pgdata:/var/lib/postgresql/data
-
   api:
     build: ./services/api
     restart: unless-stopped
-    env_file:
-      - ./services/api/.env
+    environment:
+      OFFLINE_ONLY: "1"
+      OFFLINE_OUTPUTS_DIR: /data/outputs
     ports:
       - "8000:8000"
-    depends_on:
-      - postgres
-
-  ingestion:
-    build: ./services/ingestion
-    restart: unless-stopped
-    env_file:
-      - ./services/ingestion/.env
-    depends_on:
-      - api
-
-  detection:
-    build: ./services/detection
-    restart: unless-stopped
-    env_file:
-      - ./services/detection/.env
-    depends_on:
-      - api
-
-  notifier:
-    build: ./services/notifier
-    restart: unless-stopped
-    env_file:
-      - ./services/notifier/.env
-    depends_on:
-      - api
-
-volumes:
-  pgdata:
+    volumes:
+      - ../outputs:/data/outputs:ro
+      - ./web:/app/web:ro

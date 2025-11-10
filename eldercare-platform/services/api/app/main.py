@@ -1,13 +1,13 @@
 from fastapi import FastAPI, Depends, HTTPException, status, Header
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse, FileResponse
+from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
 from sqlmodel import Session, select
 from .database import engine, init_db
 from .models import User, Device, SensorReading, Alert, Event
 from .config import settings
 from .auth import create_access_token, hash_password, verify_password
-import os
+import os, pandas as pd
 
 app = FastAPI(title="Eldercare API")
 
@@ -19,10 +19,14 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Static frontend (placeholder)
 WEB_DIR = os.path.join(os.path.dirname(__file__), "..", "..", "web")
 if os.path.isdir(WEB_DIR):
     app.mount("/", StaticFiles(directory=WEB_DIR, html=True), name="web")
+
+# Offline dataset caching
+OFFLINE = os.getenv("OFFLINE_ONLY", "0") == "1"
+OUTPUTS_DIR = os.getenv("OFFLINE_OUTPUTS_DIR", "/data/outputs")
+offline_cache: dict[str, pd.DataFrame] = {}
 
 ROLES = {"elderly", "caregiver", "clinician", "admin", "integrator"}
 
@@ -36,6 +40,14 @@ def rbac(required_roles: set[str]):
 @app.on_event("startup")
 def on_startup():
     init_db()
+    if OFFLINE:
+        for fname in ["merged_scored.csv", "qc_sensor_counts.csv"]:
+            fpath = os.path.join(OUTPUTS_DIR, fname)
+            if os.path.isfile(fpath):
+                try:
+                    offline_cache[fname] = pd.read_csv(fpath)
+                except Exception:
+                    pass
 
 # --- Auth minimal ---
 @app.post("/api/v1/auth/login")
@@ -108,17 +120,51 @@ def ack_alert(alert_id: int, by: str):
 # --- Dashboard (sketch) ---
 @app.get("/api/v1/users/{user_id}/dashboard")
 def dashboard(user_id: int):
+    if OFFLINE:
+        merged = offline_cache.get("merged_scored.csv")
+        qc = offline_cache.get("qc_sensor_counts.csv")
+        user_rows = None
+        if merged is not None:
+            user_rows = merged[merged.get("subject_id", merged.columns[0]) == str(user_id)].to_dict(orient="records")
+        return {"offline": True, "merged_rows": user_rows, "qc_summary_rows": qc.head(20).to_dict(orient="records") if qc is not None else None}
     with Session(engine) as s:
-        readings = s.exec(select(SensorReading).order_by(SensorReading.ts.desc()).limit(100)).all()
-        alerts = s.exec(select(Alert).order_by(Alert.created_at.desc()).limit(50)).all()
+        readings = s.exec(select(SensorReading).limit(100)).all()
+        alerts = s.exec(select(Alert).limit(50)).all()
         return {"recent_readings": [r.dict() for r in readings], "alerts": [a.dict() for a in alerts]}
 
 # --- Reports (sketch) ---
+@app.get("/api/v1/offline/subjects")
+def offline_subjects():
+    if not OFFLINE:
+        raise HTTPException(400, "offline mode disabled")
+    merged = offline_cache.get("merged_scored.csv")
+    if merged is None:
+        return {"subjects": []}
+    cols = [c for c in ["subject_id", "independence_index", "steps_sum", "active_minutes"] if c in merged.columns]
+    return {"subjects": merged[cols].head(200).to_dict(orient="records")}
+
+@app.get("/api/v1/offline/risk_scores")
+def offline_risk_scores():
+    if not OFFLINE:
+        raise HTTPException(400, "offline mode disabled")
+    merged = offline_cache.get("merged_scored.csv")
+    if merged is None:
+        return {"risk_scores": []}
+    if "independence_index" in merged.columns:
+        out = merged[["subject_id", "independence_index"]].rename(columns={"independence_index": "score"})
+    else:
+        out = merged.iloc[:0]
+    return {"risk_scores": out.to_dict(orient="records")}
+
 @app.get("/api/v1/reports/{user_id}")
-def report(user_id: int, type: str = "csv", _from: str | None = None, to: str | None = None):
-    # Placeholder: return empty CSV header
-    csv = "timestamp,sensor,value\n"
-    return JSONResponse({"type": type, "data": csv})
+def report(user_id: int, type: str = "csv"):
+    if OFFLINE:
+        merged = offline_cache.get("merged_scored.csv")
+        if merged is None:
+            return JSONResponse({"type": type, "data": ""})
+        csv_head = merged.head(50).to_csv(index=False)
+        return JSONResponse({"type": type, "data": csv_head})
+    return JSONResponse({"type": type, "data": "timestamp,sensor,value\n"})
 
 if __name__ == "__main__":
     import uvicorn
