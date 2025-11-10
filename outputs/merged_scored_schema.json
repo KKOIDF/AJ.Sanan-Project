@@ -1,0 +1,157 @@
+{
+  "columns": [
+    {
+      "name": "subject_id",
+      "dtype": "object"
+    },
+    {
+      "name": "steps_sum",
+      "dtype": "float64"
+    },
+    {
+      "name": "calories_sum",
+      "dtype": "float64"
+    },
+    {
+      "name": "temp_mean",
+      "dtype": "float64"
+    },
+    {
+      "name": "batt_mean",
+      "dtype": "float64"
+    },
+    {
+      "name": "active_minutes",
+      "dtype": "float64"
+    },
+    {
+      "name": "sleep_transitions",
+      "dtype": "float64"
+    },
+    {
+      "name": "bins",
+      "dtype": "float64"
+    },
+    {
+      "name": "life_life_c15",
+      "dtype": "float64"
+    },
+    {
+      "name": "life_life_c22",
+      "dtype": "float64"
+    },
+    {
+      "name": "life_life_c29",
+      "dtype": "float64"
+    },
+    {
+      "name": "life_life_c36",
+      "dtype": "float64"
+    },
+    {
+      "name": "cog_cog_c9",
+      "dtype": "float64"
+    },
+    {
+      "name": "steps_sum_z",
+      "dtype": "float64"
+    },
+    {
+      "name": "calories_sum_z",
+      "dtype": "float64"
+    },
+    {
+      "name": "temp_mean_z",
+      "dtype": "float64"
+    },
+    {
+      "name": "batt_mean_z",
+      "dtype": "float64"
+    },
+    {
+      "name": "active_minutes_z",
+      "dtype": "float64"
+    },
+    {
+      "name": "sleep_transitions_z",
+      "dtype": "float64"
+    },
+    {
+      "name": "bins_z",
+      "dtype": "float64"
+    },
+    {
+      "name": "life_life_c15_z",
+      "dtype": "float64"
+    },
+    {
+      "name": "life_life_c22_z",
+      "dtype": "float64"
+    },
+    {
+      "name": "life_life_c29_z",
+      "dtype": "float64"
+    },
+    {
+      "name": "life_life_c36_z",
+      "dtype": "float64"
+    },
+    {
+      "name": "cog_cog_c9_z",
+      "dtype": "float64"
+    },
+    {
+      "name": "steps_sum_z_w",
+      "dtype": "float64"
+    },
+    {
+      "name": "calories_sum_z_w",
+      "dtype": "float64"
+    },
+    {
+      "name": "temp_mean_z_w",
+      "dtype": "float64"
+    },
+    {
+      "name": "batt_mean_z_w",
+      "dtype": "float64"
+    },
+    {
+      "name": "active_minutes_z_w",
+      "dtype": "float64"
+    },
+    {
+      "name": "sleep_transitions_z_w",
+      "dtype": "float64"
+    },
+    {
+      "name": "bins_z_w",
+      "dtype": "float64"
+    },
+    {
+      "name": "life_life_c15_z_w",
+      "dtype": "float64"
+    },
+    {
+      "name": "life_life_c22_z_w",
+      "dtype": "float64"
+    },
+    {
+      "name": "life_life_c29_z_w",
+      "dtype": "float64"
+    },
+    {
+      "name": "life_life_c36_z_w",
+      "dtype": "float64"
+    },
+    {
+      "name": "cog_cog_c9_z_w",
+      "dtype": "float64"
+    },
+    {
+      "name": "independence_index",
+      "dtype": "float64"
+    }
+  ],
+  "row_count": 3
+}

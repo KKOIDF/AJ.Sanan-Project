@@ -1,0 +1,212 @@
+<?xml version="1.0" encoding="Shift_JIS"?>
+<schedule>
+<projecttitle>簡易マニュアル<enableflg>1</enableflg>
+<cipherflg>0</cipherflg>
+<tabnumber>-1</tabnumber>
+<projectsubtitle></projectsubtitle>
+<projectcategory></projectcategory>
+<projectcreatedtime>2025/07/29 18:34:57</projectcreatedtime>
+<projectlastmodified>2025/07/29 18:34:57</projectlastmodified>
+<projectcreateuser>ToDo×Rocky</projectcreateuser>
+<projectlastupdateuser>LAPTOP-BLOQPGT1</projectlastupdateuser>
+<projectbgimagefile></projectbgimagefile>
+<projectbgcolor>16777215</projectbgcolor>
+<projectbgtileflg>0</projectbgtileflg>
+<todotextcolor>0</todotextcolor>
+<todotextcolorbg>0</todotextcolorbg>
+<todotextcolorfinish>8421440</todotextcolorfinish>
+<todotextcolorfinishbg>8421440</todotextcolorfinishbg>
+<todotextcolordeadlinepassed>8421440</todotextcolordeadlinepassed>
+<todotextcolordeadlinepassedbg>255</todotextcolordeadlinepassedbg>
+</projecttitle>
+<todo><contents>知りたい項目をダブルクリックしてください</contents>
+<details>知りたい項目をダブルクリックしてください
+簡単な説明があります。</details>
+<importancedegree>2</importancedegree>
+<client></client>
+<processedflg>0</processedflg>
+<processedlevel>0</processedlevel>
+<deadline>1970/01/01 09:00:00</deadline>
+<deadlineflg>0</deadlineflg>
+<starttime>1970/01/01 09:00:00</starttime>
+<finishtime>1970/01/01 09:00:00</finishtime>
+<createdtime>2025/07/29 18:34:57</createdtime>
+<lastmodified>2025/07/29 18:34:57</lastmodified>
+<url></url>
+<mailadress></mailadress>
+<reference></reference>
+</todo>
+<todo><contents>プロジェクトの新規追加／設定／削除</contents>
+<details>プロジェクトを新規追加／設定／削除をするには、
+まずタブの上で右クリックします。するとメニューが出てくるので新規や削除を選択してください。</details>
+<importancedegree>2</importancedegree>
+<client></client>
+<processedflg>0</processedflg>
+<processedlevel>0</processedlevel>
+<deadline>1970/01/01 09:00:00</deadline>
+<deadlineflg>0</deadlineflg>
+<starttime>1970/01/01 09:00:00</starttime>
+<finishtime>1970/01/01 09:00:00</finishtime>
+<createdtime>2025/07/29 18:34:57</createdtime>
+<lastmodified>2025/07/29 18:34:57</lastmodified>
+<url></url>
+<mailadress></mailadress>
+<reference></reference>
+</todo>
+<todo><contents>ToDoの追加／更新／削除</contents>
+<details>ToDoを新規追加／更新／削除するには、
+リストの上で右クリックし、出てきたメニューの追加や削除を選択して行います。
+ToDoを選択してダブルクリックすることで更新もできます。</details>
+<importancedegree>2</importancedegree>
+<client></client>
+<processedflg>0</processedflg>
+<processedlevel>0</processedlevel>
+<deadline>1970/01/01 09:00:00</deadline>
+<deadlineflg>0</deadlineflg>
+<starttime>1970/01/01 09:00:00</starttime>
+<finishtime>1970/01/01 09:00:00</finishtime>
+<createdtime>2025/07/29 18:34:57</createdtime>
+<lastmodified>2025/07/29 18:34:57</lastmodified>
+<url></url>
+<mailadress></mailadress>
+<reference></reference>
+</todo>
+<todo><contents>ToDoの上下移動</contents>
+<details>ToDoを上下移動させるには、
+移動させたいToDoを選択し、Altキーを押しながら上下ボタンを押します。</details>
+<importancedegree>2</importancedegree>
+<client></client>
+<processedflg>0</processedflg>
+<processedlevel>0</processedlevel>
+<deadline>1970/01/01 09:00:00</deadline>
+<deadlineflg>0</deadlineflg>
+<starttime>1970/01/01 09:00:00</starttime>
+<finishtime>1970/01/01 09:00:00</finishtime>
+<createdtime>2025/07/29 18:34:57</createdtime>
+<lastmodified>2025/07/29 18:34:57</lastmodified>
+<url></url>
+<mailadress></mailadress>
+<reference></reference>
+</todo>
+<todo><contents>ToDoを別のプロジェクトへ移動／コピー</contents>
+<details>ToDoを別のプロジェクトへ移動／コピーするには、
+ToDoを選択→右クリック、出てきたメニューの移動やコピーを選択して行います。
+ToDoを複数選択して移動することもできます。</details>
+<importancedegree>2</importancedegree>
+<client></client>
+<processedflg>0</processedflg>
+<processedlevel>0</processedlevel>
+<deadline>1970/01/01 09:00:00</deadline>
+<deadlineflg>0</deadlineflg>
+<starttime>1970/01/01 09:00:00</starttime>
+<finishtime>1970/01/01 09:00:00</finishtime>
+<createdtime>2025/07/29 18:34:57</createdtime>
+<lastmodified>2025/07/29 18:34:57</lastmodified>
+<url></url>
+<mailadress></mailadress>
+<reference></reference>
+</todo>
+<todo><contents>ToDo複数選択</contents>
+<details>ToDoを複数選択するのは、
+Ctrlキーを押しながらクリックします。
+移動／コピーのときに便利です。</details>
+<importancedegree>2</importancedegree>
+<client></client>
+<processedflg>0</processedflg>
+<processedlevel>0</processedlevel>
+<deadline>1970/01/01 09:00:00</deadline>
+<deadlineflg>0</deadlineflg>
+<starttime>1970/01/01 09:00:00</starttime>
+<finishtime>1970/01/01 09:00:00</finishtime>
+<createdtime>2025/07/29 18:34:57</createdtime>
+<lastmodified>2025/07/29 18:34:57</lastmodified>
+<url></url>
+<mailadress></mailadress>
+<reference></reference>
+</todo>
+<todo><contents>←チェックを入れると終了</contents>
+<details>左の□をクリックするとToDoは終了したとこになります。もう一度クリックすると再開します。</details>
+<importancedegree>2</importancedegree>
+<client></client>
+<processedflg>0</processedflg>
+<processedlevel>0</processedlevel>
+<deadline>1970/01/01 09:00:00</deadline>
+<deadlineflg>0</deadlineflg>
+<starttime>1970/01/01 09:00:00</starttime>
+<finishtime>1970/01/01 09:00:00</finishtime>
+<createdtime>2025/07/29 18:34:57</createdtime>
+<lastmodified>2025/07/29 18:34:57</lastmodified>
+<url></url>
+<mailadress></mailadress>
+<reference></reference>
+</todo>
+<todo><contents>締め切りを過ぎていると色が変わります</contents>
+<details>締め切りを過ぎていると色が変わります
+この色を変更することもできます
+タスクトレイのアイコンをクリックして、メニューの「ソフトの設定」を選んでください。</details>
+<importancedegree>2</importancedegree>
+<client></client>
+<processedflg>0</processedflg>
+<processedlevel>0</processedlevel>
+<deadline>2025/07/29 18:34:57</deadline>
+<deadlineflg>1</deadlineflg>
+<starttime>1970/01/01 09:00:00</starttime>
+<finishtime>1970/01/01 09:00:00</finishtime>
+<createdtime>2025/07/29 18:34:57</createdtime>
+<lastmodified>2025/07/29 18:34:57</lastmodified>
+<url></url>
+<mailadress></mailadress>
+<reference></reference>
+</todo>
+<todo><contents>インポート機能</contents>
+<details>他のパソコンから持ってきたデータを取り込むことが出来ます。
+メニューのインポートを選択するとファイル選択ダイアログが出てきます。
+そこでインポートしたいファイルを選んでください。</details>
+<importancedegree>2</importancedegree>
+<client></client>
+<processedflg>0</processedflg>
+<processedlevel>0</processedlevel>
+<deadline>1970/01/01 09:00:00</deadline>
+<deadlineflg>0</deadlineflg>
+<starttime>1970/01/01 09:00:00</starttime>
+<finishtime>1970/01/01 09:00:00</finishtime>
+<createdtime>2025/07/29 18:34:57</createdtime>
+<lastmodified>2025/07/29 18:34:57</lastmodified>
+<url></url>
+<mailadress></mailadress>
+<reference></reference>
+</todo>
+<todo><contents>レポート作成機能</contents>
+<details>ToDoの状況のレポートを作成できます。メニューで「レポート作成」を選択後、作成したいプロジェクトを選び作成ボタンを押すと出来上がります。表示項目や条件の調整もできます。</details>
+<importancedegree>2</importancedegree>
+<client></client>
+<processedflg>0</processedflg>
+<processedlevel>0</processedlevel>
+<deadline>1970/01/01 09:00:00</deadline>
+<deadlineflg>0</deadlineflg>
+<starttime>1970/01/01 09:00:00</starttime>
+<finishtime>1970/01/01 09:00:00</finishtime>
+<createdtime>2025/07/29 18:34:57</createdtime>
+<lastmodified>2025/07/29 18:34:57</lastmodified>
+<url></url>
+<mailadress></mailadress>
+<reference></reference>
+</todo>
+<todo><contents>このアプリの終了の方法</contents>
+<details>このアプリはバツボタンをクリックしても終了しません。
+タスクトレイのアイコン上で右クリック→メニューで『終了』を選択してください。</details>
+<importancedegree>2</importancedegree>
+<client></client>
+<processedflg>0</processedflg>
+<processedlevel>0</processedlevel>
+<deadline>1970/01/01 09:00:00</deadline>
+<deadlineflg>0</deadlineflg>
+<starttime>1970/01/01 09:00:00</starttime>
+<finishtime>1970/01/01 09:00:00</finishtime>
+<createdtime>2025/07/29 18:34:57</createdtime>
+<lastmodified>2025/07/29 18:34:57</lastmodified>
+<url></url>
+<mailadress></mailadress>
+<reference></reference>
+</todo>
+</schedule>
