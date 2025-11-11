@@ -35,6 +35,22 @@ const dataCache = new Map();
 const alerts = [];
 let alertIdCounter = 1;
 
+// Human-friendly labels for weighted z-score features (feature contribution hints)
+const FEATURE_LABELS = {
+  steps_sum_z_w: 'Steps (z, weighted)',
+  calories_sum_z_w: 'Calories (z, weighted)',
+  temp_mean_z_w: 'Temperature mean (z, weighted)',
+  batt_mean_z_w: 'Battery mean (z, weighted)',
+  active_minutes_z_w: 'Active minutes (z, weighted)',
+  sleep_transitions_z_w: 'Sleep transitions (z, weighted)',
+  bins_z_w: 'Activity bins (z, weighted)',
+  life_life_c15_z_w: 'ADL C15 (z, weighted)',
+  life_life_c22_z_w: 'ADL C22 (z, weighted)',
+  life_life_c29_z_w: 'ADL C29 (z, weighted)',
+  life_life_c36_z_w: 'ADL C36 (z, weighted)',
+  cog_cog_c9_z_w: 'Cognitive C9 (z, weighted)'
+};
+
 // Load CSV data into memory
 async function loadCSVData(filename) {
   const filepath = path.join(OUTPUTS_DIR, filename);
@@ -130,6 +146,51 @@ function categorizeRisk(score, thresholds) {
   if (score <= thresholds.low) return 'Low';
   if (score <= thresholds.high) return 'Medium';
   return 'High';
+}
+
+// Compute feature contributions based on weighted z-score fields
+function computeFeatureContributions(row) {
+  const items = [];
+  Object.entries(FEATURE_LABELS).forEach(([key, label]) => {
+    const raw = row[key];
+    if (raw === undefined || raw === null || raw === '') return;
+    const value = parseFloat(raw);
+    if (Number.isNaN(value)) return;
+    items.push({ key, label, value, abs: Math.abs(value), direction: value >= 0 ? 'high' : 'low' });
+  });
+  items.sort((a, b) => b.abs - a.abs);
+  return items;
+}
+
+// Build human-readable explanation for a row's risk level
+function buildRiskExplanation(row, thresholds) {
+  const score = row.independence_index != null ? parseFloat(row.independence_index) : null;
+  const risk_level = score != null ? categorizeRisk(score, thresholds) : null;
+  const contributions = computeFeatureContributions(row);
+  const top = contributions.slice(0, 5);
+
+  const reasonPhrases = top.map(it => {
+    const dir = it.direction === 'high' ? 'higher' : 'lower';
+    return `${it.label} is ${dir} than the cohort average (${it.value.toFixed(2)})`;
+  });
+
+  let thresholdText = '';
+  if (score != null) {
+    thresholdText = `Independence index ${score.toFixed(2)} vs thresholds: Low ≤ ${thresholds.low.toFixed(2)}, Medium ≤ ${thresholds.high.toFixed(2)} (method: ${thresholds.method}).`;
+  }
+
+  const summary_text = risk_level
+    ? `Risk level is ${risk_level}. ${thresholdText} Top contributing factors: ${reasonPhrases.slice(0, 3).join('; ')}.`
+    : 'Risk level unavailable due to missing independence_index.';
+
+  return {
+    risk_level,
+    independence_index: score,
+    thresholds,
+    summary_text,
+    reasons: reasonPhrases,
+    contributions: contributions.map(c => ({ label: c.label, key: c.key, value: c.value, direction: c.direction }))
+  };
 }
 
 // Initialize alerts based on high risk subjects & notable activity metrics
@@ -313,7 +374,8 @@ app.get('/api/people', (req, res) => {
         steps_sum: row.steps_sum ? parseFloat(row.steps_sum) : null,
         active_minutes: row.active_minutes ? parseFloat(row.active_minutes) : null,
         risk_level: score != null ? categorizeRisk(score, thresholds) : null,
-        records: []
+        records: [],
+        _latest_row: row
       };
     }
     byId[sid].records.push(row);
@@ -338,7 +400,15 @@ app.get('/api/people', (req, res) => {
     steps_sum: p.steps_sum,
     active_minutes: p.active_minutes,
     risk_level: p.risk_level,
-    qc: p.qc || null
+    qc: p.qc || null,
+    top_reason: (() => {
+      try {
+        const exp = buildRiskExplanation(p._latest_row || {}, thresholds);
+        return exp?.reasons?.[0] || null;
+      } catch {
+        return null;
+      }
+    })()
   }));
   res.json({ people, total: people.length, thresholds });
 });
@@ -360,6 +430,7 @@ app.get('/api/people/:id', (req, res) => {
   const latest = personRows[personRows.length - 1];
   const score = latest.independence_index ? parseFloat(latest.independence_index) : null;
   const qcRow = qc.find(q => String(q.subject_id) === String(id));
+  const explanation = buildRiskExplanation(latest, thresholds);
   const detail = {
     subject_id: id,
     metrics: {
@@ -369,7 +440,8 @@ app.get('/api/people/:id', (req, res) => {
       risk_level: score != null ? categorizeRisk(score, thresholds) : null
     },
     qc: qcRow || null,
-    records_count: personRows.length
+    records_count: personRows.length,
+    explanations: explanation
   };
   res.json(detail);
 });
