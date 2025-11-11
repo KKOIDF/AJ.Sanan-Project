@@ -30,6 +30,7 @@ app.use(express.static(path.join(__dirname, 'public')));
 // Data paths
 const OUTPUTS_DIR = path.join(__dirname, '../outputs');
 const DATA_DIR = path.join(__dirname, '../data');
+const STORAGE_DIR = path.join(__dirname, 'storage');
 const dataCache = new Map();
 // In-memory alerts store (simulated) and helper counters
 const alerts = [];
@@ -89,9 +90,58 @@ async function initializeData() {
     console.log('✅ Data cache initialized');
     await buildSubjectRoster();
     initializeAlerts();
+    await ensureStorage();
+    await loadAdminUsers();
+    await loadChatConversations();
   } catch (error) {
     console.error('❌ Error loading data:', error);
   }
+}
+
+// Ensure storage directory
+async function ensureStorage() {
+  if (!await fs.pathExists(STORAGE_DIR)) {
+    await fs.mkdirp(STORAGE_DIR);
+    console.log('📁 Created storage directory');
+  }
+}
+
+// --- Admin Users Persistence ---
+const ADMIN_USERS_FILE = path.join(STORAGE_DIR, 'admin_users.json');
+let adminUsers = [];
+
+async function loadAdminUsers() {
+  if (await fs.pathExists(ADMIN_USERS_FILE)) {
+    try { adminUsers = await fs.readJSON(ADMIN_USERS_FILE); } catch { adminUsers = []; }
+  } else {
+    adminUsers = [
+      { id: 1, email: 'admin@example.com', role: 'admin', name: 'System Admin', createdAt: new Date().toISOString() }
+    ];
+    await fs.writeJSON(ADMIN_USERS_FILE, adminUsers, { spaces: 2 });
+  }
+  console.log(`👥 Loaded admin users: ${adminUsers.length}`);
+}
+
+async function saveAdminUsers() {
+  await fs.writeJSON(ADMIN_USERS_FILE, adminUsers, { spaces: 2 });
+}
+
+// --- Chat Conversations Persistence ---
+const CHAT_FILE = path.join(STORAGE_DIR, 'chat_conversations.json');
+let chatConversations = []; // [{ id, subject_id, messages:[{sender:'caregiver'|'bot', text, ts}] }]
+
+async function loadChatConversations() {
+  if (await fs.pathExists(CHAT_FILE)) {
+    try { chatConversations = await fs.readJSON(CHAT_FILE); } catch { chatConversations = []; }
+  } else {
+    chatConversations = [];
+    await fs.writeJSON(CHAT_FILE, chatConversations, { spaces: 2 });
+  }
+  console.log(`💬 Loaded chat conversations: ${chatConversations.length}`);
+}
+
+async function saveChatConversations() {
+  await fs.writeJSON(CHAT_FILE, chatConversations, { spaces: 2 });
 }
 
 // Build a consolidated subject roster from multiple data sources
@@ -143,9 +193,10 @@ function computeRiskThresholds(rows) {
 }
 
 function categorizeRisk(score, thresholds) {
-  if (score <= thresholds.low) return 'Low';
+  // Lower independence_index implies lower independence -> higher risk
+  if (score <= thresholds.low) return 'High';
   if (score <= thresholds.high) return 'Medium';
-  return 'High';
+  return 'Low';
 }
 
 // Compute feature contributions based on weighted z-score fields
@@ -310,12 +361,12 @@ app.get('/api/risk-levels', (req, res) => {
   const categorizedData = validData.map(row => {
     let risk_level;
     if (row.independence_index <= lowThreshold) {
-      risk_level = 'Low';
-    } else if (row.independence_index <= highThreshold) {
-      risk_level = 'Medium';
-    } else {
-      risk_level = 'High';
-    }
+        risk_level = 'High';
+      } else if (row.independence_index <= highThreshold) {
+        risk_level = 'Medium';
+      } else {
+        risk_level = 'Low';
+      }
     
     return { ...row, risk_level };
   });
@@ -726,6 +777,110 @@ app.post('/api/auth/login', (req, res) => {
       message: 'กรุณาใส่อีเมลและรหัสผ่าน'
     });
   }
+});
+
+// --- Admin Overview & User Management ---
+app.get('/api/admin/overview', (req, res) => {
+  const merged = dataCache.get('merged_scored') || [];
+  const qc = dataCache.get('qc_sensor_counts') || [];
+  const subjects = dataCache.get('subject_roster') || [];
+  const riskThresholds = computeRiskThresholds(merged);
+  const counts = { low:0, medium:0, high:0 };
+  merged.forEach(r => {
+    if (!r.independence_index) return;
+    const score = parseFloat(r.independence_index);
+    const rl = categorizeRisk(score, riskThresholds);
+    counts[rl.toLowerCase()]++;
+  });
+  res.json({
+    subjects_total: subjects.length,
+    merged_rows: merged.length,
+    qc_rows: qc.length,
+    risk_counts: counts,
+    admin_users: adminUsers.map(u => ({ id: u.id, email: u.email, role: u.role, name: u.name })),
+    thresholds: riskThresholds
+  });
+});
+
+app.get('/api/admin/users', (req, res) => {
+  res.json({ users: adminUsers });
+});
+
+app.post('/api/admin/users', async (req, res) => {
+  const { email, name, role = 'admin' } = req.body;
+  if (!email) return res.status(400).json({ error: 'email required' });
+  const exists = adminUsers.find(u => u.email.toLowerCase() === email.toLowerCase());
+  if (exists) return res.status(409).json({ error: 'user already exists' });
+  const id = adminUsers.length ? Math.max(...adminUsers.map(u=>u.id)) + 1 : 1;
+  const user = { id, email, name: name || email.split('@')[0], role, createdAt: new Date().toISOString() };
+  adminUsers.push(user);
+  await saveAdminUsers();
+  res.status(201).json(user);
+});
+
+app.delete('/api/admin/users/:id', async (req, res) => {
+  const id = parseInt(req.params.id);
+  const idx = adminUsers.findIndex(u => u.id === id);
+  if (idx === -1) return res.status(404).json({ error: 'not found' });
+  const removed = adminUsers.splice(idx,1)[0];
+  await saveAdminUsers();
+  res.json({ removed });
+});
+
+// --- Caregiver Chat Endpoints ---
+app.get('/api/chat/conversations', (req, res) => {
+  const { subject_id } = req.query;
+  let list = chatConversations;
+  if (subject_id) list = list.filter(c => String(c.subject_id) === String(subject_id));
+  res.json({ conversations: list });
+});
+
+app.post('/api/chat/message', async (req, res) => {
+  const { subject_id, text } = req.body;
+  if (!subject_id || !text) return res.status(400).json({ error: 'subject_id and text required' });
+  let convo = chatConversations.find(c => String(c.subject_id) === String(subject_id));
+  if (!convo) {
+    convo = { id: chatConversations.length ? Math.max(...chatConversations.map(c=>c.id))+1 : 1, subject_id, messages: [] };
+    chatConversations.push(convo);
+  }
+  const ts = new Date().toISOString();
+  convo.messages.push({ sender: 'caregiver', text, ts });
+
+  // Simple bot reply using current risk info
+  const people = []; // reconstruct a quick subject snapshot from /api/people logic (lightweight)
+  const merged = dataCache.get('merged_scored') || [];
+  const row = merged.filter(r => String(r.subject_id) === String(subject_id)).pop();
+  let reply = 'Thanks, noted.';
+  if (row && row.independence_index) {
+    const thr = computeRiskThresholds(merged);
+    const rl = categorizeRisk(parseFloat(row.independence_index), thr);
+    reply = `Current risk level for ${subject_id} is ${rl}. Independence index: ${parseFloat(row.independence_index).toFixed(2)}.`;
+  } else {
+    // fallback look into qc
+    const qc = dataCache.get('qc_sensor_counts') || [];
+    const q = qc.find(qx => String(qx.subject_id) === String(subject_id));
+    if (q) reply = `Subject ${subject_id} has QC-only data. Avg steps/day: ${q.avg_steps || 'n/a'}.`;
+  }
+  convo.messages.push({ sender: 'bot', text: reply, ts: new Date().toISOString() });
+  await saveChatConversations();
+  res.status(201).json(convo);
+});
+
+// Escalate conversation to human staff
+app.post('/api/chat/escalate', async (req, res) => {
+  const { subject_id, reason } = req.body;
+  if (!subject_id) return res.status(400).json({ error: 'subject_id required' });
+  let convo = chatConversations.find(c => String(c.subject_id) === String(subject_id));
+  if (!convo) {
+    convo = { id: chatConversations.length ? Math.max(...chatConversations.map(c=>c.id))+1 : 1, subject_id, messages: [], escalatedAt: null };
+    chatConversations.push(convo);
+  }
+  const ts = new Date().toISOString();
+  const escalationReason = reason && reason.trim() ? reason.trim() : 'User requested human assistance';
+  convo.messages.push({ sender: 'system', type: 'escalation', text: `Escalation requested: ${escalationReason}`, ts });
+  convo.escalatedAt = ts;
+  await saveChatConversations();
+  res.status(201).json({ conversation: convo, status: 'escalated' });
 });
 
 // Catch-all handler: send back index.html file
