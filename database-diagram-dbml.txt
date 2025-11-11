@@ -1,0 +1,118 @@
+// Sanan Eldercare Platform - Database Diagram (DBML for dbdiagram.io)
+// Converted from PlantUML ER diagram
+// Date: 2025-11-11
+
+Project sanan_eldcare_database {
+  database_type: "PostgreSQL"
+  Note: 'Derived from repo data model; adjust types/constraints as needed.'
+}
+
+Table subjects {
+  subject_id varchar [pk]
+  age int
+  gender varchar
+  created_at datetime
+
+  Note: 'Source: data/* subject attributes'
+
+  Indexes {
+    (created_at) [name: 'idx_subjects_created_at']
+  }
+}
+
+Table life_independence {
+  id varchar [pk]
+  subject_id varchar
+  adl_score int
+  measured_at datetime
+}
+
+Table cognitive_function {
+  id varchar [pk]
+  subject_id varchar
+  mmse int
+  measured_at datetime
+}
+
+Table inspection_result {
+  id varchar [pk]
+  subject_id varchar
+  metrics_json text
+  measured_at datetime
+}
+
+Table evaluation {
+  id varchar [pk]
+  subject_id varchar
+  risk_level varchar
+  evaluator varchar
+  evaluated_at datetime
+}
+
+Table residential_data {
+  id varchar [pk]
+  subject_id varchar
+  ts datetime
+  payload_json text
+}
+
+Table sensor_data {
+  id varchar [pk]
+  device_id varchar
+  subject_id varchar
+  ts datetime
+  activity float
+
+  Note: 'Source: sensing_data/*/*.csv'
+
+  Indexes {
+    (subject_id, ts) [name: 'idx_sensor_subject_ts']
+    (device_id, ts)  [name: 'idx_sensor_device_ts']
+  }
+}
+
+Table ground_observatory_data {
+  id varchar [pk]
+  ts datetime
+  payload_json text
+
+  Note: 'Global dataset; correlate by time/location if needed (no direct FK).'
+}
+
+Table alerts {
+  alert_id varchar [pk]
+  subject_id varchar
+  severity varchar
+  type varchar
+  message text
+  detected_at datetime
+  acknowledged boolean
+  acknowledged_at datetime
+
+  Note: 'Created by detection service'
+
+  Indexes {
+    (subject_id, detected_at) [name: 'idx_alerts_subject_detected_at']
+    (severity)                [name: 'idx_alerts_severity']
+  }
+}
+
+Table status {
+  id varchar [pk]
+  subject_id varchar
+  state varchar
+  updated_at datetime
+}
+
+// Relationships
+Ref: life_independence.subject_id > subjects.subject_id
+Ref: cognitive_function.subject_id > subjects.subject_id
+Ref: inspection_result.subject_id > subjects.subject_id
+Ref: evaluation.subject_id > subjects.subject_id
+Ref: residential_data.subject_id > subjects.subject_id
+Ref: sensor_data.subject_id > subjects.subject_id
+Ref: alerts.subject_id > subjects.subject_id
+Ref: status.subject_id > subjects.subject_id
+
+// Potential correlation (optional, not enforced)
+// Ref: ground_observatory_data.ts <> residential_data.ts

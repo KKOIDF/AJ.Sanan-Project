@@ -1,0 +1,131 @@
+@startuml
+' Sanan-Project - Database (ER) Diagram in PlantUML
+' ASCII-only, left-to-right, slide-friendly
+
+title Sanan Eldercare Platform - Database Diagram (ER)
+
+left to right direction
+skinparam shadowing false
+skinparam ArrowColor #444
+skinparam RoundCorner 6
+skinparam linetype ortho
+skinparam NoteBackgroundColor #FFFBEA
+skinparam NoteBorderColor #E0C97A
+
+' Core subject entity
+entity "subjects" as subjects {
+  * subject_id : string
+  --
+  age : int
+  gender : string
+  created_at : datetime
+}
+
+entity "life_independence" as life_independence {
+  * id : string
+  --
+  subject_id : string
+  adl_score : int
+  measured_at : datetime
+}
+
+entity "cognitive_function" as cognitive_function {
+  * id : string
+  --
+  subject_id : string
+  mmse : int
+  measured_at : datetime
+}
+
+entity "inspection_result" as inspection_result {
+  * id : string
+  --
+  subject_id : string
+  metrics_json : text
+  measured_at : datetime
+}
+
+entity "evaluation" as evaluation {
+  * id : string
+  --
+  subject_id : string
+  risk_level : string
+  evaluator : string
+  evaluated_at : datetime
+}
+
+entity "residential_data" as residential_data {
+  * id : string
+  --
+  subject_id : string
+  ts : datetime
+  payload_json : text
+}
+
+entity "sensor_data" as sensor_data {
+  * id : string
+  --
+  device_id : string
+  subject_id : string
+  ts : datetime
+  activity : number
+}
+
+entity "ground_observatory_data" as ground_observatory_data {
+  * id : string
+  --
+  ts : datetime
+  payload_json : text
+}
+
+entity "alerts" as alerts {
+  * alert_id : string
+  --
+  subject_id : string
+  severity : string
+  type : string
+  message : string
+  detected_at : datetime
+  acknowledged : boolean
+  acknowledged_at : datetime
+}
+
+entity "status" as status {
+  * id : string
+  --
+  subject_id : string
+  state : string
+  updated_at : datetime
+}
+
+' Relationships (crow's foot notation)
+subjects ||--o{ life_independence : has
+subjects ||--o{ cognitive_function : has
+subjects ||--o{ inspection_result : has
+subjects ||--o{ evaluation : has
+subjects ||--o{ residential_data : has
+subjects ||--o{ sensor_data : has
+subjects ||--o{ alerts : has
+subjects ||--o{ status : has
+
+' Ground observatory may be global (no direct FK). Link by time/location if needed.
+' ground_observatory_data }o--o{ residential_data : correlates
+
+note bottom of subjects
+Source: data/* subject attributes
+PK: subject_id
+Indexes: by created_at
+end note
+
+note bottom of sensor_data
+Source: sensing_data/*/*.csv
+PK: id (surrogate)
+Indexes: (subject_id, ts), (device_id, ts)
+end note
+
+note bottom of alerts
+Created by detection
+Indexes: (subject_id, detected_at), (severity)
+end note
+
+@enduml
