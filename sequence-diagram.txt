@@ -1,0 +1,85 @@
+@startuml
+' Sanan-Project — Sequence Diagram (PlantUML)
+' ASCII-only, slide-friendly, standard features only
+
+title Sanan Eldercare Platform - Sequence Diagram
+
+skinparam shadowing false
+skinparam ArrowColor #444
+skinparam ParticipantBackgroundColor #E9F2FF
+skinparam ParticipantBorderColor #7EA7D8
+skinparam NoteBackgroundColor #FFFBEA
+skinparam NoteBorderColor #E0C97A
+
+actor User as U
+participant "Client SPA\n(React)" as SPA
+participant "Web Server\n(eldercare-web)" as WS
+participant "API Service\n(services/api)" as API
+database "DataStore" as DB
+participant "Ingestion Service" as ING
+participant "Detection Service" as DET
+participant "Notifier Service" as NOTI
+
+== Background ETL ==
+activate ING
+ING -> DB: Upsert entities (subjects, sensors, etc.)
+deactivate ING
+
+activate DET
+DET -> DB: Read SensorData + context
+DET -> API: Emit alerts/status
+activate API
+API -> DB: Persist alerts/status
+deactivate API
+DET -> NOTI: Raise alerts
+deactivate DET
+
+NOTI -> API: Ack delivery
+API -> DB: Update alert status
+
+== User opens and views dashboard ==
+U -> SPA: Open application
+SPA -> WS: GET /
+WS --> SPA: index.html + assets
+
+alt API access mode
+  SPA -> API: GET /api/status
+  SPA -> API: GET /api/alerts
+else via Web Server proxy
+  SPA -> WS: GET /api/status
+  WS -> API: Forward /api/status
+  API --> WS: JSON status
+  WS --> SPA: JSON status
+  SPA -> WS: GET /api/alerts
+  WS -> API: Forward /api/alerts
+end
+
+API -> DB: Query status
+DB --> API: Status rows
+API --> SPA: JSON status
+
+API -> DB: Query alerts
+DB --> API: Alert rows
+API --> SPA: JSON alerts
+
+SPA --> U: Render dashboard + notifications
+
+note right of SPA
+client/
+- src/App.tsx
+- public/index.html
+end note
+
+note right of WS
+eldercare-web/server.js
+- serves SPA
+- proxies /api
+end note
+
+note right of API
+services/api/
+- simple_server.py
+- requirements.txt
+end note
+
+@enduml

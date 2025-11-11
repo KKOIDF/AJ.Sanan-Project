@@ -1,0 +1,177 @@
+@startuml
+' Sanan-Project — System Class Diagram (PlantUML)
+' High-level view based on repository structure and service responsibilities
+
+title Sanan Eldercare Platform — Class Diagram
+
+skinparam packageStyle rectangle
+skinparam classAttributeIconSize 0
+
+package "client" {
+  class ReactApp <<React>> {
+    +render()
+    +navigate()
+    +callAPI(path)
+  }
+}
+
+package "eldercare-web" {
+  class WebServer <<Node.js>> {
+    +serveStatic()
+    +proxyAPI(path)
+  }
+}
+
+package "eldercare-platform/services" {
+  package "api" {
+    class APIService <<REST, Python>> {
+      +GET /status
+      +POST /events
+      +GET /alerts
+    }
+  }
+  package "ingestion" {
+    class IngestionService <<Worker, Python>> {
+      +loadCSV()
+      +parseSensorData()
+      +upsertEntities()
+      +publishEvents()
+    }
+  }
+  package "detection" {
+    class DetectionService <<Analytics, Python>> {
+      +scoreSignals()
+      +detectAnomalies()
+      +emitAlerts()
+    }
+  }
+  package "notifier" {
+    class NotifierService <<Worker, Python>> {
+      +sendEmail()
+      +sendSMS()
+      +pushNotification()
+    }
+  }
+}
+
+package "data" {
+  class Subject {
+    +subjectId: string
+    +age: int
+    +gender: string
+  }
+  class LifeIndependence {
+    +subjectId: string
+    +adlScore: int
+  }
+  class CognitiveFunction {
+    +subjectId: string
+    +mmse: int
+  }
+  class InspectionResult {
+    +subjectId: string
+    +metrics: map
+  }
+  class Evaluation {
+    +subjectId: string
+    +riskLevel: string
+  }
+  class ResidentialData {
+    +subjectId: string
+    +timestamp: datetime
+    +values: map
+  }
+  class GroundObservatoryData {
+    +timestamp: datetime
+    +values: map
+  }
+  class SensorData {
+    +deviceId: string
+    +subjectId: string
+    +timestamp: datetime
+    +activity: number
+  }
+  class DataStore <<Storage>> {
+    +datasets
+  }
+}
+
+package "outputs" {
+  class MergedScored <<CSV>> {
+    +path: outputs/merged_scored.csv
+  }
+}
+
+' Client and Web
+ReactApp --> WebServer : HTTP
+WebServer --> APIService : proxy /api
+ReactApp ..> APIService : direct HTTP (dev)
+
+' Services and DataStore
+IngestionService --> DataStore : read/write
+DetectionService --> DataStore : read
+APIService --> DataStore : CRUD
+DetectionService --> NotifierService : raise alerts
+NotifierService --> APIService : persist/ack
+
+' Data flows
+IngestionService ..> SensorData : parses
+IngestionService ..> Subject : upserts
+IngestionService ..> ResidentialData : loads
+IngestionService ..> GroundObservatoryData : loads
+DetectionService ..> SensorData : consumes
+DetectionService ..> MergedScored : produces
+
+' Domain relationships
+Subject "1" o-- "*" LifeIndependence
+Subject "1" o-- "*" CognitiveFunction
+Subject "1" o-- "*" InspectionResult
+Subject "1" o-- "*" Evaluation
+SensorData "*" --> "1" Subject : observed for
+ResidentialData "*" --> "1" Subject : belongs to
+
+' Notes tied to repository structure
+note right of ReactApp
+client/ (React)
+- src/App.tsx
+- public/index.html
+end note
+
+note right of WebServer
+eldercare-web/server.js (Node)
+- serves SPA
+- proxies API
+end note
+
+note bottom of APIService
+services/api/
+- simple_server.py
+- requirements.txt
+end note
+
+note bottom of IngestionService
+services/ingestion/
+- app/ (data loaders)
+- consumes data/ and data_1/
+end note
+
+note bottom of DetectionService
+services/detection/
+- app/ (scoring/anomaly)
+- produces outputs/
+end note
+
+note bottom of NotifierService
+services/notifier/
+- app/ (delivery channels)
+end note
+
+note as N1
+Data sources (examples):
+- data/data_0/*.csv (subjects, ADL, MMSE, etc.)
+- data/data_1/*.csv (updated slices)
+- sensing_data/*/*.csv (device streams)
+end note
+N1 .. DataStore
+
+@enduml
