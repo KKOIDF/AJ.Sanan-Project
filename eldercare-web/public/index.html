@@ -54,6 +54,7 @@
             });
             const [notifications, setNotifications] = useState([]);
             const [searchTerm, setSearchTerm] = useState('');
+            const [onlyCefox, setOnlyCefox] = useState(false);
             const [expanded, setExpanded] = useState(null);
             const [reasonsCache, setReasonsCache] = useState({});
             const addNotification = (message, type) => {
@@ -64,14 +65,16 @@
             };
             const fetchData = async () => {
                 try {
-                    const [subjectsRes, riskRes, deviceRes] = await Promise.all([
+                    const [subjectsRes, riskRes, deviceRes, peopleRes] = await Promise.all([
                         fetch('/api/subjects?limit=50'),
                         fetch('/api/risk-levels?method=quantile'),
-                        fetch('/api/device-quality')
+                        fetch('/api/device-quality'),
+                        fetch('/api/people')
                     ]);
                     const subjects = await subjectsRes.json();
                     const riskLevels = await riskRes.json();
                     const deviceQuality = await deviceRes.json();
+                    const people = await peopleRes.json();
                     setData(prev => ({
                         ...prev,
                         subjects: subjects.subjects || [],
@@ -80,6 +83,7 @@
                         riskMeta: riskLevels.meta || {},
                         deviceQuality: deviceQuality.devices || [],
                         deviceSummary: deviceQuality.summary || {},
+                        people: people.people || [],
                         loading: false
                     }));
                     addNotification('✅ Data loaded', 'success');
@@ -114,7 +118,13 @@
                     </div>
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
                         <div className="card-glass rounded-2xl p-6 shadow-xl">
-                            <h2 className="text-2xl font-bold text-gray-800 mb-4">📊 Risk Overview</h2>
+                            <div className="flex items-center justify-between mb-4">
+                              <h2 className="text-2xl font-bold text-gray-800">📊 Risk Overview</h2>
+                              <label className="text-sm text-gray-600 flex items-center gap-2">
+                                <input type="checkbox" className="w-4 h-4" checked={onlyCefox} onChange={e=>setOnlyCefox(e.target.checked)} />
+                                Only “cefox” IDs
+                              </label>
+                            </div>
                             <div className="grid grid-cols-3 gap-4 mb-6">
                                 <div className="risk-low text-white p-4 rounded-lg text-center"><div className="text-2xl font-bold">{data.riskCounts?.Low || 0}</div><div className="text-sm">Low risk</div></div>
                                 <div className="risk-medium text-white p-4 rounded-lg text-center"><div className="text-2xl font-bold">{data.riskCounts?.Medium || 0}</div><div className="text-sm">Medium risk</div></div>
@@ -124,12 +134,14 @@
                                 <table className="w-full text-sm">
                                     <thead className="bg-gray-100 sticky top-0"><tr><th className="p-2 text-left">Subject</th><th className="p-2 text-center">Index</th><th className="p-2 text-center">Risk</th><th className="p-2 text-center">Explain</th></tr></thead>
                                     <tbody>
-                                        {data.riskLevels.slice(0,10).map((item,i)=>(
+                                        {((data.people||[]).filter(p=> !onlyCefox || String(p.subject_id).toLowerCase().startsWith('cefox'))).map((item,i)=>(
                                             <React.Fragment key={i}>
                                                 <tr className="border-b hover:bg-gray-50">
                                                     <td className="p-2 font-semibold">{item.subject_id}</td>
-                                                    <td className="p-2 text-center">{parseFloat(item.independence_index).toFixed(2)}</td>
-                                                    <td className="p-2 text-center"><span className={`px-3 py-1 rounded-full text-white text-xs font-semibold ${item.risk_level==='Low'?'risk-low':item.risk_level==='Medium'?'risk-medium':'risk-high'}`}>{item.risk_level}</span></td>
+                                                    <td className="p-2 text-center">{item.independence_index!=null?parseFloat(item.independence_index).toFixed(2):'-'}</td>
+                                                    <td className="p-2 text-center">
+                                                        {item.risk_level? <span className={`px-3 py-1 rounded-full text-white text-xs font-semibold ${item.risk_level==='Low'?'risk-low':item.risk_level==='Medium'?'risk-medium':'risk-high'}`}>{item.risk_level}</span> : <span className="px-3 py-1 rounded-full bg-gray-300 text-gray-800 text-xs font-semibold">Unknown</span>}
+                                                    </td>
                                                     <td className="p-2 text-center"><button className="px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white rounded text-xs" onClick={()=>toggleExplain(item.subject_id)}>{expanded===item.subject_id? 'Hide':'Why?'}</button></td>
                                                 </tr>
                                                 {expanded===item.subject_id && <tr className="bg-white/70">

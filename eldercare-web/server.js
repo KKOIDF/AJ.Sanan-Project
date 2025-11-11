@@ -362,7 +362,10 @@ app.get('/api/device-quality', (req, res) => {
 app.get('/api/people', (req, res) => {
   const merged = dataCache.get('merged_scored') || [];
   const qc = dataCache.get('qc_sensor_counts') || [];
-  const thresholds = computeRiskThresholds(merged);
+  const roster = dataCache.get('subject_roster') || [];
+  let thresholds = computeRiskThresholds(merged);
+
+  // Build base records
   const byId = {};
   merged.forEach(row => {
     const sid = row.subject_id;
@@ -373,43 +376,116 @@ app.get('/api/people', (req, res) => {
         independence_index: score,
         steps_sum: row.steps_sum ? parseFloat(row.steps_sum) : null,
         active_minutes: row.active_minutes ? parseFloat(row.active_minutes) : null,
-        risk_level: score != null ? categorizeRisk(score, thresholds) : null,
+        risk_level: null,
         records: [],
-        _latest_row: row
+        _latest_row: row,
+        qc: null,
+        _index_source: 'model'
       };
     }
     byId[sid].records.push(row);
   });
-  // enrich with qc stats
+
+  // Enrich with QC stats
   qc.forEach(q => {
     const sid = q.subject_id;
-    if (byId[sid]) {
-      byId[sid].qc = {
-        records: parseInt(q.records || 0),
-        unique_days: parseInt(q.unique_days || 0),
-        min_date: q.min_date || null,
-        max_date: q.max_date || null,
-        avg_steps: q.avg_steps ? parseFloat(q.avg_steps) : null,
-        avg_active_minutes: q.avg_active_minutes ? parseFloat(q.avg_active_minutes) : null
+    if (!byId[sid]) {
+      byId[sid] = {
+        subject_id: sid,
+        independence_index: null,
+        steps_sum: null,
+        active_minutes: null,
+        risk_level: null,
+        records: [],
+        _latest_row: null,
+        qc: null,
+        _index_source: 'unknown'
       };
     }
+    byId[sid].qc = {
+      records: parseInt(q.records || 0),
+      unique_days: parseInt(q.unique_days || 0),
+      min_date: q.min_date || null,
+      max_date: q.max_date || null,
+      avg_steps: q.avg_steps ? parseFloat(q.avg_steps) : null,
+      avg_active_minutes: q.avg_active_minutes ? parseFloat(q.avg_active_minutes) : null
+    };
   });
-  const people = Object.values(byId).map(p => ({
+
+  // Ensure all roster IDs are present
+  roster.forEach(id => {
+    if (!byId[id]) byId[id] = { subject_id: id, independence_index: null, steps_sum: null, active_minutes: null, risk_level: null, records: [], _latest_row: null, qc: null, _index_source: 'unknown' };
+  });
+
+  // Compute derived indices from QC averages for those missing
+  const pool = Object.values(byId);
+  const stepsValues = pool.map(p => p.qc?.avg_steps).filter(v => v != null);
+  const activeValues = pool.map(p => p.qc?.avg_active_minutes).filter(v => v != null);
+  const meanStd = arr => {
+    if (!arr.length) return { mean: 0, std: 1 };
+    const mean = arr.reduce((a,b)=>a+b,0) / arr.length;
+    const variance = arr.reduce((a,b)=> a + Math.pow(b-mean,2), 0) / Math.max(1, arr.length - 1);
+    const std = Math.sqrt(variance) || 1;
+    return { mean, std };
+  };
+  const S = meanStd(stepsValues);
+  const A = meanStd(activeValues);
+  const z = (v, s) => v == null ? 0 : (v - s.mean) / s.std;
+
+  const indices = [];
+  pool.forEach(p => {
+    if (p.independence_index == null && (p.qc?.avg_steps != null || p.qc?.avg_active_minutes != null)) {
+      const zs = z(p.qc?.avg_steps ?? null, S);
+      const za = z(p.qc?.avg_active_minutes ?? null, A);
+      p.independence_index = (isFinite(zs) ? 0.7*zs : 0) + (isFinite(za) ? 0.3*za : 0);
+      p._index_source = 'qc_derived';
+      if (p.steps_sum == null && p.qc?.avg_steps != null) p.steps_sum = p.qc.avg_steps;
+    }
+    if (p.independence_index != null) indices.push(p.independence_index);
+  });
+
+  // Recompute thresholds over combined indices if enough data
+  if (indices.length >= 3) {
+    const sorted = indices.slice().sort((a,b)=>a-b);
+    const low = sorted[Math.floor(sorted.length * 0.33)];
+    const high = sorted[Math.floor(sorted.length * 0.66)];
+    thresholds = { method: 'quantile_combined', low, high };
+  }
+
+  // Assign risk levels
+  pool.forEach(p => {
+    if (p.independence_index != null) {
+      p.risk_level = categorizeRisk(p.independence_index, thresholds);
+    }
+  });
+
+  const people = pool.map(p => ({
     subject_id: p.subject_id,
     independence_index: p.independence_index,
     steps_sum: p.steps_sum,
     active_minutes: p.active_minutes,
     risk_level: p.risk_level,
     qc: p.qc || null,
+    index_source: p._index_source,
     top_reason: (() => {
       try {
-        const exp = buildRiskExplanation(p._latest_row || {}, thresholds);
-        return exp?.reasons?.[0] || null;
-      } catch {
+        if (p._latest_row) {
+          const exp = buildRiskExplanation(p._latest_row, thresholds);
+          return exp?.reasons?.[0] || null;
+        }
+        if (p.qc && (p.qc.avg_steps != null || p.qc.avg_active_minutes != null)) {
+          const zs = z(p.qc.avg_steps ?? null, S);
+          const za = z(p.qc.avg_active_minutes ?? null, A);
+          const parts = [];
+          if (isFinite(zs)) parts.push(`Average steps/day is ${zs>=0?'higher':'lower'} than cohort (${zs.toFixed(2)})`);
+          if (isFinite(za)) parts.push(`Active minutes/day is ${za>=0?'higher':'lower'} than cohort (${za.toFixed(2)})`);
+          return parts[0] || null;
+        }
         return null;
-      }
+      } catch { return null; }
     })()
   }));
+
   res.json({ people, total: people.length, thresholds });
 });
 
@@ -424,26 +500,105 @@ app.get('/api/people/:id', (req, res) => {
   const { id } = req.params;
   const merged = dataCache.get('merged_scored') || [];
   const qc = dataCache.get('qc_sensor_counts') || [];
+
   const personRows = merged.filter(r => String(r.subject_id) === String(id));
-  if (!personRows.length) return res.status(404).json({ error: 'Not found' });
-  const thresholds = computeRiskThresholds(merged);
-  const latest = personRows[personRows.length - 1];
-  const score = latest.independence_index ? parseFloat(latest.independence_index) : null;
   const qcRow = qc.find(q => String(q.subject_id) === String(id));
-  const explanation = buildRiskExplanation(latest, thresholds);
+
+  // If we have merged/model rows, return the detailed view based on model
+  if (personRows.length) {
+    const thresholds = computeRiskThresholds(merged);
+    const latest = personRows[personRows.length - 1];
+    const score = latest.independence_index ? parseFloat(latest.independence_index) : null;
+    const explanation = buildRiskExplanation(latest, thresholds);
+    const detail = {
+      subject_id: id,
+      metrics: {
+        independence_index: score,
+        steps_sum: latest.steps_sum ? parseFloat(latest.steps_sum) : null,
+        active_minutes: latest.active_minutes ? parseFloat(latest.active_minutes) : null,
+        risk_level: score != null ? categorizeRisk(score, thresholds) : null
+      },
+      qc: qcRow || null,
+      records_count: personRows.length,
+      explanations: explanation
+    };
+    return res.json(detail);
+  }
+
+  // Fallback: if no model rows, derive index and explanation from QC averages
+  if (!qcRow) return res.status(404).json({ error: 'Not found' });
+
+  // Compute cohort stats for QC to derive z-scores and composite index
+  const stepsValues = qc.map(r => r.avg_steps).filter(v => v != null).map(parseFloat);
+  const activeValues = qc.map(r => r.avg_active_minutes).filter(v => v != null).map(parseFloat);
+  const meanStd = arr => {
+    if (!arr.length) return { mean: 0, std: 1 };
+    const mean = arr.reduce((a,b)=>a+b,0) / arr.length;
+    const variance = arr.reduce((a,b)=> a + Math.pow(b-mean,2), 0) / Math.max(1, arr.length - 1);
+    const std = Math.sqrt(variance) || 1;
+    return { mean, std };
+  };
+  const S = meanStd(stepsValues);
+  const A = meanStd(activeValues);
+  const z = (v, s) => v == null ? 0 : (parseFloat(v) - s.mean) / s.std;
+
+  // Build combined indices (model + qc-derived) to compute thresholds similar to list endpoint
+  const modelIndices = merged
+    .filter(r => r.independence_index && !isNaN(parseFloat(r.independence_index)))
+    .map(r => parseFloat(r.independence_index));
+  const qcDerivedIndices = qc
+    .map(r => {
+      const zs = z(r.avg_steps ?? null, S);
+      const za = z(r.avg_active_minutes ?? null, A);
+      return (isFinite(zs) ? 0.7*zs : 0) + (isFinite(za) ? 0.3*za : 0);
+    })
+    .filter(v => v != null && isFinite(v));
+  const allIndices = [...modelIndices, ...qcDerivedIndices];
+  let thresholds = { method: 'fixed', low: -0.5, high: 0.5 };
+  if (allIndices.length >= 3) {
+    const sorted = allIndices.slice().sort((a,b)=>a-b);
+    const low = sorted[Math.floor(sorted.length * 0.33)];
+    const high = sorted[Math.floor(sorted.length * 0.66)];
+    thresholds = { method: 'quantile_combined', low, high };
+  }
+
+  // Derive this subject's index and risk
+  const zs = z(qcRow.avg_steps ?? null, S);
+  const za = z(qcRow.avg_active_minutes ?? null, A);
+  const derivedIndex = (isFinite(zs) ? 0.7*zs : 0) + (isFinite(za) ? 0.3*za : 0);
+  const risk = categorizeRisk(derivedIndex, thresholds);
+
+  // Build QC-based explanation
+  const reasons = [];
+  if (isFinite(zs)) reasons.push(`Average steps/day is ${zs>=0?'higher':'lower'} than cohort (${zs.toFixed(2)})`);
+  if (isFinite(za)) reasons.push(`Active minutes/day is ${za>=0?'higher':'lower'} than cohort (${za.toFixed(2)})`);
+  const summary_text = `Risk level is ${risk}. Independence index (QC-derived) ${derivedIndex.toFixed(2)} vs thresholds: Low ≤ ${thresholds.low.toFixed(2)}, Medium ≤ ${thresholds.high.toFixed(2)} (method: ${thresholds.method}). Top contributing factors: ${reasons.slice(0,2).join('; ')}.`;
+  const explanation = {
+    risk_level: risk,
+    independence_index: derivedIndex,
+    thresholds,
+    summary_text,
+    reasons,
+    contributions: [
+      ...(isFinite(zs) ? [{ label: 'Average steps/day (QC)', key: 'qc_avg_steps', value: zs, direction: zs>=0?'high':'low' }] : []),
+      ...(isFinite(za) ? [{ label: 'Active minutes/day (QC)', key: 'qc_avg_active_minutes', value: za, direction: za>=0?'high':'low' }] : [])
+    ]
+  };
+
   const detail = {
     subject_id: id,
     metrics: {
-      independence_index: score,
-      steps_sum: latest.steps_sum ? parseFloat(latest.steps_sum) : null,
-      active_minutes: latest.active_minutes ? parseFloat(latest.active_minutes) : null,
-      risk_level: score != null ? categorizeRisk(score, thresholds) : null
+      independence_index: derivedIndex,
+      steps_sum: qcRow.avg_steps != null ? parseFloat(qcRow.avg_steps) : null,
+      active_minutes: qcRow.avg_active_minutes != null ? parseFloat(qcRow.avg_active_minutes) : null,
+      risk_level: risk
     },
     qc: qcRow || null,
-    records_count: personRows.length,
-    explanations: explanation
+    records_count: 0,
+    explanations: explanation,
+    index_source: 'qc_derived'
   };
-  res.json(detail);
+  return res.json(detail);
 });
 
 // Raw person records (all rows for a subject) with optional limit
@@ -596,17 +751,41 @@ app.use((err, req, res, next) => {
   });
 });
 
-// Start server
+// Start server with simple port fallback if preferred port is busy
 async function startServer() {
   await initializeData();
-  
-  app.listen(PORT, () => {
-    console.log('🏥 Eldercare Monitoring System Started');
-    console.log(`🌐 Server running on: http://localhost:${PORT}`);
-    console.log(`📊 API endpoints available at: http://localhost:${PORT}/api`);
-    console.log(`📱 Health check: http://localhost:${PORT}/api/health`);
-    console.log('='.repeat(50));
-  });
+
+  const preferred = parseInt(process.env.PORT, 10) || PORT;
+  const candidates = [preferred, preferred + 1, preferred + 2];
+  let boundPort = null;
+
+  for (const p of candidates) {
+    try {
+      await new Promise((resolve, reject) => {
+        const server = app.listen(p, () => resolve(server));
+        server.on('error', reject);
+      });
+      boundPort = p;
+      break;
+    } catch (err) {
+      if (err && err.code === 'EADDRINUSE') {
+        console.warn(`⚠️  Port ${p} in use, trying next...`);
+        continue;
+      }
+      throw err;
+    }
+  }
+
+  if (boundPort == null) {
+    console.error('❌ Failed to bind to any available port');
+    process.exit(1);
+  }
+
+  console.log('🏥 Eldercare Monitoring System Started');
+  console.log(`🌐 Server running on: http://localhost:${boundPort}`);
+  console.log(`📊 API endpoints available at: http://localhost:${boundPort}/api`);
+  console.log(`📱 Health check: http://localhost:${boundPort}/api/health`);
+  console.log('='.repeat(50));
 }
 
 startServer().catch(console.error);
