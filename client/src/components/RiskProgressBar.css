@@ -1,0 +1,39 @@
+.risk-progress-bar-component {
+  margin-bottom: 20px;
+}
+
+.risk-progress-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.risk-progress-label {
+  font-size: 14px;
+  color: #666;
+  font-weight: 500;
+}
+
+.risk-progress-percentage {
+  font-size: 14px;
+  color: #333;
+  font-weight: bold;
+}
+
+.risk-progress-track {
+  height: 8px;
+  background: #e9ecef;
+  border-radius: 10px;
+  overflow: hidden;
+  position: relative;
+}
+
+.risk-progress-fill {
+  height: 100%;
+  border-radius: 10px;
+  transition: width 0.5s ease;
+  position: absolute;
+  left: 0;
+  top: 0;
+}

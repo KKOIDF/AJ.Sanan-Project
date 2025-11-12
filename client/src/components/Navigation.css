@@ -1,0 +1,136 @@
+.navigation-menu {
+  position: fixed;
+  top: 0;
+  left: 0;
+  height: 100vh;
+  width: 80px;
+  background: white;
+  box-shadow: 2px 0 10px rgba(0, 0, 0, 0.1);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 20px 0;
+  z-index: 1000;
+  transition: width 0.3s ease;
+}
+
+.navigation-menu:hover {
+  width: 200px;
+}
+
+.nav-brand {
+  margin-bottom: 40px;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.navigation-menu:hover .nav-brand {
+  opacity: 1;
+}
+
+.nav-brand h2 {
+  font-size: 18px;
+  color: #333;
+  margin: 0;
+  white-space: nowrap;
+}
+
+.nav-items {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  width: 100%;
+  padding: 0 10px;
+}
+
+.nav-item {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  padding: 15px;
+  border: none;
+  background: transparent;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  width: 100%;
+  text-align: left;
+}
+
+.nav-item:hover {
+  background: #f8f9fa;
+  transform: translateX(5px);
+}
+
+.nav-item.active {
+  background: linear-gradient(135deg, #667eea, #764ba2);
+  color: white;
+}
+
+.nav-icon {
+  font-size: 24px;
+  flex-shrink: 0;
+}
+
+.nav-label {
+  font-size: 14px;
+  font-weight: 500;
+  white-space: nowrap;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.navigation-menu:hover .nav-label {
+  opacity: 1;
+}
+
+.nav-item.active .nav-label {
+  color: white;
+}
+
+/* Adjust main content when nav is present */
+.app-with-nav {
+  margin-left: 80px;
+}
+
+@media (max-width: 768px) {
+  .navigation-menu {
+    width: 100%;
+    height: 60px;
+    flex-direction: row;
+    justify-content: space-around;
+    bottom: 0;
+    top: auto;
+    padding: 10px;
+  }
+
+  .navigation-menu:hover {
+    width: 100%;
+  }
+
+  .nav-brand {
+    display: none;
+  }
+
+  .nav-items {
+    flex-direction: row;
+    width: auto;
+    padding: 0;
+  }
+
+  .nav-item {
+    flex-direction: column;
+    gap: 5px;
+    padding: 10px 20px;
+  }
+
+  .nav-label {
+    opacity: 1;
+    font-size: 11px;
+  }
+
+  .app-with-nav {
+    margin-left: 0;
+    margin-bottom: 60px;
+  }
+}

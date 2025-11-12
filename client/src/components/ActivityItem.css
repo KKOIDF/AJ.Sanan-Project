@@ -1,0 +1,62 @@
+.activity-item-component {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  background: white;
+  padding: 15px;
+  border-radius: 10px;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  cursor: pointer;
+}
+
+.activity-item-component:hover {
+  transform: translateX(5px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.activity-item-icon {
+  font-size: 24px;
+  flex-shrink: 0;
+}
+
+.activity-item-content {
+  flex: 1;
+  min-width: 0;
+}
+
+.activity-item-name {
+  font-size: 14px;
+  color: #333;
+  font-weight: 500;
+  margin: 0 0 3px 0;
+}
+
+.activity-item-time {
+  font-size: 12px;
+  color: #666;
+  margin: 0;
+}
+
+.activity-item-status {
+  padding: 5px 15px;
+  border-radius: 15px;
+  font-size: 12px;
+  font-weight: 500;
+  text-transform: lowercase;
+  flex-shrink: 0;
+}
+
+.activity-item-status.completed {
+  background: #d4edda;
+  color: #155724;
+}
+
+.activity-item-status.pending {
+  background: #d1ecf1;
+  color: #0c5460;
+}
+
+.activity-item-status.in-progress {
+  background: #fff3cd;
+  color: #856404;
+}

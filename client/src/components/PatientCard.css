@@ -1,0 +1,95 @@
+.patient-card-component {
+  background: #f8f9fa;
+  border-radius: 12px;
+  padding: 15px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  border: 2px solid transparent;
+}
+
+.patient-card-component:hover {
+  background: #e9ecef;
+  transform: translateX(5px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.patient-card-component.selected {
+  background: #e3f2fd;
+  border-color: #2196F3;
+  box-shadow: 0 4px 12px rgba(33, 150, 243, 0.3);
+}
+
+.patient-card-component-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 10px;
+}
+
+.patient-card-avatar {
+  width: 45px;
+  height: 45px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #667eea, #764ba2);
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
+  font-size: 18px;
+  flex-shrink: 0;
+}
+
+.patient-card-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.patient-card-info h3 {
+  font-size: 15px;
+  margin: 0 0 3px 0;
+  color: #333;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.patient-card-meta {
+  font-size: 12px;
+  color: #666;
+  margin: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.patient-card-risk-dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.patient-card-component-footer {
+  padding-top: 8px;
+  border-top: 1px solid #dee2e6;
+}
+
+.patient-card-status-label {
+  font-size: 12px;
+  color: #666;
+}
+
+.patient-card-status-label.high {
+  color: #ff4444;
+  font-weight: 600;
+}
+
+.patient-card-status-label.medium {
+  color: #ffbb33;
+  font-weight: 600;
+}
+
+.patient-card-status-label.low {
+  color: #00C851;
+}

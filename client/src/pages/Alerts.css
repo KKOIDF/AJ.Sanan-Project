@@ -1,0 +1,275 @@
+.alerts-page {
+  min-height: 100vh;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  padding: 20px;
+}
+
+.alerts-header {
+  background: white;
+  padding: 30px;
+  border-radius: 15px;
+  margin-bottom: 20px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.alerts-header h1 {
+  font-size: 28px;
+  color: #333;
+  margin: 0 0 5px 0;
+}
+
+.alerts-subtitle {
+  font-size: 14px;
+  color: #666;
+  margin: 0;
+}
+
+.alerts-filter {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+}
+
+.filter-btn {
+  padding: 10px 20px;
+  border: none;
+  border-radius: 8px;
+  background: white;
+  color: #333;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.filter-btn:hover {
+  background: #f8f9fa;
+  transform: translateY(-2px);
+}
+
+.filter-btn.active {
+  background: #2196F3;
+  color: white;
+  box-shadow: 0 4px 12px rgba(33, 150, 243, 0.4);
+}
+
+.alerts-container {
+  background: white;
+  border-radius: 15px;
+  padding: 20px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  min-height: 500px;
+}
+
+.alerts-list {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.alert-card {
+  display: flex;
+  align-items: flex-start;
+  gap: 20px;
+  background: #f8f9fa;
+  padding: 20px;
+  border-radius: 12px;
+  border-left: 5px solid;
+  transition: all 0.3s ease;
+}
+
+.alert-card:hover {
+  transform: translateX(5px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.alert-card.open {
+  background: #fff3e0;
+  border-left-color: #ff9800;
+}
+
+.alert-card.acknowledged {
+  background: #e8f5e9;
+  border-left-color: #4CAF50;
+  opacity: 0.8;
+}
+
+.alert-card.declined {
+  background: #ffebee;
+  border-left-color: #f44336;
+  opacity: 0.6;
+}
+
+.alert-icon {
+  font-size: 36px;
+  flex-shrink: 0;
+}
+
+.alert-content {
+  flex: 1;
+  min-width: 0;
+}
+
+.alert-header-info {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.alert-type {
+  font-size: 18px;
+  color: #333;
+  margin: 0;
+  font-weight: 600;
+  text-transform: capitalize;
+}
+
+.alert-time {
+  font-size: 12px;
+  color: #666;
+}
+
+.alert-message {
+  font-size: 14px;
+  color: #555;
+  margin: 0 0 10px 0;
+  line-height: 1.5;
+}
+
+.alert-meta {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.alert-patient {
+  font-size: 13px;
+  color: #666;
+  font-weight: 500;
+}
+
+.alert-status-badge {
+  padding: 4px 12px;
+  border-radius: 12px;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.alert-status-badge.open {
+  background: #ff9800;
+  color: white;
+}
+
+.alert-status-badge.acknowledged {
+  background: #4CAF50;
+  color: white;
+}
+
+.alert-status-badge.declined {
+  background: #f44336;
+  color: white;
+}
+
+.alert-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.alert-btn {
+  padding: 8px 16px;
+  border: none;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  white-space: nowrap;
+}
+
+.alert-btn.acknowledge {
+  background: #4CAF50;
+  color: white;
+}
+
+.alert-btn.acknowledge:hover {
+  background: #45a049;
+  transform: scale(1.05);
+}
+
+.alert-btn.decline {
+  background: #f44336;
+  color: white;
+}
+
+.alert-btn.decline:hover {
+  background: #da190b;
+  transform: scale(1.05);
+}
+
+.no-alerts {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 80px 20px;
+  text-align: center;
+}
+
+.no-alerts-icon {
+  font-size: 64px;
+  margin-bottom: 20px;
+}
+
+.no-alerts h3 {
+  font-size: 24px;
+  color: #333;
+  margin: 0 0 10px 0;
+}
+
+.no-alerts p {
+  font-size: 16px;
+  color: #666;
+  margin: 0;
+}
+
+.alerts-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100vh;
+  font-size: 18px;
+  color: white;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .alerts-filter {
+    flex-direction: column;
+  }
+  
+  .filter-btn {
+    width: 100%;
+  }
+  
+  .alert-card {
+    flex-direction: column;
+  }
+  
+  .alert-actions {
+    flex-direction: row;
+    width: 100%;
+  }
+  
+  .alert-btn {
+    flex: 1;
+  }
+}
